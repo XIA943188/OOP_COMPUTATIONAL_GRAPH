@@ -6,6 +6,8 @@
 template<typename _T>
 class CondNode : public CalcNode<_T>
 {
+private:
+	static const std::string ErrMsg; //需要输出的错误信息，设定为静态
 protected:
     _T Calc(); //重载Calc
     _T DerCalc(Node <_T> *operand);
@@ -16,6 +18,10 @@ public:
     using CalcNode<_T>::Operands;
     using CalcNode<_T>::CalcNode;
 };
+
+template<typename _T>
+const std::string CondNode<_T>::ErrMsg = "ERROR: Cannot derivate with COND";
+}
 
 template<>
 double CondNode<double>::Calc()
@@ -31,7 +37,7 @@ double CondNode<double>::Calc()
 template<typename _T>
 _T CondNode<_T>::DerCalc(Node <_T> *operand)
 {
-    throw "ERROR: Cannot derivate with COND";
+    throw ErrMsg;
 }
 
 #endif //COMPUTATIONAL_GRAPH_CONDNODE_H

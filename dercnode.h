@@ -31,4 +31,12 @@ double DerCNode<double>::Calc()
     return *Result;
 }
 
+template<>
+Tensor DerCNode<Tensor>::Calc()
+{
+    Tensor der = Operands[0]->GetDer(Operands[1]);
+    Result = new Tensor(der);
+    return *Result;
+}
+
 #endif //COMPUTATIONAL_GRAPH_DERCNODE_H

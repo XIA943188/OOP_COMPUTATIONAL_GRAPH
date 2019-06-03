@@ -1,6 +1,8 @@
 #ifndef COMPUTATIONAL_GRAPH_NODE_H
 #define COMPUTATIONAL_GRAPH_NODE_H
 
+#include "tensor.h"
+
 template<typename _T>
 class Node
 {

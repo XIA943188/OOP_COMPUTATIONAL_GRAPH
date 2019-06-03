@@ -48,5 +48,14 @@ double PHNode<double>::GetDer(Node <double> *operand)
 	return *DerResult;
 }
 
+template<>
+Tensor PHNode<Tensor>::GetDer(Node <Tensor> *operand)
+{
+	if (!Result) throw ErrMsg;
+	double der = (operand == this) ? 1.0 : 0.0;
+	DerResult = new Tensor(1, 1, der);
+	return *DerResult;
+}
+
 #endif //COMPUTATIONAL_GRAPH_PHNODE_H
 

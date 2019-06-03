@@ -7,6 +7,8 @@
 template<typename _T>
 class PriNode : public Node<_T>
 {
+private:
+	static const std::string ErrMsg; //需要输出的错误信息，设定为静态
 protected:
 	std::string WatchName; //需要被输出的节点名称
 	Node<_T> *WatchNode; //需要被输出的节点
@@ -26,6 +28,9 @@ public:
 
 	void Clear();
 };
+
+template <typename _T>
+const std::string PriNode<_T>::ErrMsg = "ERROR: Cannot derivate with PRINT";
 
 template<typename _T>
 _T PriNode<_T>::Print()
@@ -52,7 +57,7 @@ void PriNode<_T>::Clear()
 template<typename _T>
 _T PriNode<_T>::GetDer(Node <_T> *operand)
 {
-	throw "ERROR: Cannot derivate with PRINT";
+	throw ErrMsg;
 }
 
 #endif //COMPUTATIONAL_GRAPH_PRINODE_H
