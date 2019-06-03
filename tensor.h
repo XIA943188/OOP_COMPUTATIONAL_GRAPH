@@ -148,8 +148,8 @@ Tensor &Tensor::reshape(const Shape &new_shape){
 Tensor Tensor::broadcast_sum(const Tensor &t) {
     int exp_type = broadcast_cap(t);
     if (exp_type < 0) throw ErrMsg;
-    int row_iter = (exp_type ^ 1) ? t.row() : row(); //只需要找最大值
-    int col_iter = (exp_type >> 1 ^ 1) ? t.col() : col(); //只需要找最大值
+    int row_iter = (exp_type & 1) ? t.row() : row(); //只需要找最大值
+    int col_iter = (exp_type >> 1 & 1) ? t.col() : col(); //只需要找最大值
     vector<double> new_elem = vector<double>(row_iter * col_iter);
     for (int _row = 0; _row < row_iter; _row++) 
         for (int _col = 0; _col < col_iter; _col++) 
@@ -165,8 +165,8 @@ Tensor Tensor::broadcast_min(const Tensor &t) {
 Tensor Tensor::broadcast_mul(const Tensor &t) {
     int exp_type = broadcast_cap(t);
     if (exp_type < 0) throw ErrMsg;
-    int row_iter = (exp_type ^ 1) ? t.row() : row(); //只需要找最大值
-    int col_iter = (exp_type >> 1 ^ 1) ? t.col() : col(); //只需要找最大值
+    int row_iter = (exp_type & 1) ? t.row() : row(); //只需要找最大值
+    int col_iter = (exp_type >> 1 & 1) ? t.col() : col(); //只需要找最大值
     vector<double> new_elem = vector<double>(row_iter * col_iter);
     for (int _row = 0; _row < row_iter; _row++) 
         for (int _col = 0; _col < col_iter; _col++) 
