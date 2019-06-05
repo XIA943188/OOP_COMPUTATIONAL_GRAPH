@@ -21,7 +21,6 @@ public:
 
 template<typename _T>
 const std::string CondNode<_T>::ErrMsg = "ERROR: Cannot derivate with COND";
-}
 
 template<>
 double CondNode<double>::Calc()
