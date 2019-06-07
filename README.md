@@ -5,3 +5,6 @@
 
 ## 苟利国家生死以，岂因祸福趋避之
 `gou li guo jia sheng si yi, qi yin huo fu qu bi zhi.`
+
+## 牛顿迭代法
+命令行运行`make main2`以编译牛顿迭代法程序main2.

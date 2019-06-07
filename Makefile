@@ -6,3 +6,6 @@ main.o: main.cpp
 
 clean:
 	rm main *.o
+
+main2: newton.cpp
+	g++ -o main2 newton.cpp -std=c++14
