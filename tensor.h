@@ -4,157 +4,148 @@
 #include <vector>
 #include <string>
 #include <cmath>
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 
-namespace EXPAND_TYPE {
-    const int NOT_CAP = -1;
-    const int MATCH = 0;
-    const int OP1_EXP_ROW = 1;
-    const int OP1_EXP_COL = 2;
-    const int OP2_EXP_ROW = 4;
-    const int OP2_EXP_COL = 8;
-};
-
 using namespace std;
-using namespace EXPAND_TYPE;
 
-typedef pair<int, int> Shape;
+typedef vector<int> Shape;
+
+int shape2size(const Shape &s) { //将shape转化成size
+    int total_size = 1;
+    for (auto it : s) total_size *= it;
+        return total_size;
+}
+
+Shape rank2shape_rank(const int &rank, const Shape &shape) { //将循环量rank转化成每个维度上的分量
+    int _dim = shape.size();
+    Shape shape_rank(_dim);
+    int tmp = rank;
+    for (int d = _dim - 1; d >= 0; d--) { //得到对应在每个维度上的分量
+        shape_rank[d] = tmp % shape[d];
+        tmp /= shape[d];
+    }
+    return shape_rank;
+}
+
+int shape_rank2rank(const Shape &shape_rank, const Shape &shape) { //将每个维度的分量转化成循环量rank，加上取模操作方便broadcast操作，所以使用时需要额外注意
+    int _dim = shape.size(), rank = 0;
+    for (int d = 1; d < _dim; d++) {
+        rank += (shape_rank[d - 1] % shape[d - 1]);
+        rank *= shape[d];
+    }
+    rank += (shape_rank[_dim - 1] % shape[_dim - 1]);
+    return rank;
+}
 
 class Tensor {
     vector<double> _elem;
-    int _row_num; //行数
-    int _col_num; //列数
+    int _dim; //维数
+    Shape _shape; //各个维度上的尺寸
     static const string ErrMsg;
 public:
     Tensor() {}
-    Tensor(const int &row_num_, const int &col_num_, const vector<double> &elem_): _row_num(row_num_), _col_num(col_num_), _elem(elem_) {}
-    Tensor(const int &row_num_, const int &col_num_, const double &val_ = 0.0): _row_num(row_num_), _col_num(col_num_) {
-        vector<double> elem_ = vector<double>(size());
-        for (auto it : elem_) it = val_;
-        _elem = elem_;
+    Tensor(const Shape &shape_, const vector<double> &elem_): _dim(shape_.size()), _shape(shape_), _elem(elem_) {} //通过shape和elem构造
+    Tensor(const Shape &shape_, const double &val_ = 0.0):  _dim(shape_.size()), _shape(shape_) { //默认所有元素均为d，形状为shape（只在标量乘法用到）
+        _elem = vector<double>(size());
+        for (auto it : _elem) it = val_;
+    }
+    Tensor(const vector<double> elem_): _dim(1), _elem(elem_) { //默认构造一个1*n的Tensor
+        _shape = Shape(1); _shape[0] = elem_.size();
     }
     Tensor(const Tensor &t) {
         int new_size = t.size();
         vector<double> new_elem(new_size); 
         for (int i = 0; i < new_size; i++) new_elem[i] = t.elem(i);
-        _elem = new_elem; _row_num = t.row(); _col_num = t.col();
+        _elem = new_elem; _shape = t.shape();
     }
 
-    Shape shape() const { return make_pair(_row_num, _col_num); }
-    int size() const { return _row_num * _col_num; }
-    int row() const { return _row_num; }
-    int col() const { return _col_num; }
+    int size() const { return shape2size(_shape); } //返回元素个数
+    int dim() const { return _dim; } 
+    Shape shape() const { return _shape; }
+    int shape_size(const int &dim) const { return _shape[dim]; } //返回dim维度的尺寸
 
-    double &elem(const int &row, const int &col) { return _elem[row * _col_num + col]; }
     double &elem(const int &rank) { return _elem[rank]; }
-    double elem(const int &row, const int &col) const { return _elem[row * _col_num + col]; }
     double elem(const int &rank) const { return _elem[rank]; }
+    double &elem(const Shape &shape_rank) { return elem(shape_rank2rank(shape_rank, _shape)); }
+    double elem(const Shape &shape_rank) const { return elem(shape_rank2rank(shape_rank, _shape)); }
 
-    bool row_cap(const Tensor &t) { return (row() == t.row()); }
-    bool col_cap(const Tensor &t) { return (col() == t.col()); }
-    bool mul_cap(const Tensor &t) { return (col() == t.row()); }
-    bool size_cap(const Shape &shape) { return (size() == shape.first * shape.second); }
-    int broadcast_cap(const Tensor &t);
-    
+    bool size_cap(const Shape &s) { return (size() == shape2size(s)); } //比较元素个数是否相容
+    bool broadcast_cap(const Tensor &t); //比较是否能够broadcast
+    bool shape_cap(const Tensor &t, const int &dim) { return (shape_size(dim) == t.shape_size(dim)); } //比较在dim维度是否相容，用于concat
+
     Tensor &transpose();
     Tensor &reshape(const Shape &new_shape);
     Tensor broadcast_sum(const Tensor &t);
     Tensor broadcast_min(const Tensor &t);
-    Tensor broadcast_mul(const Tensor &t);
+    Tensor broadcast_mul(const Tensor &t); //broadcast版本的乘法
     Tensor concat(const Tensor &t, const int &op_dim);
-
-    Tensor operator+(const Tensor &t);
-    Tensor operator-() const ;
-    Tensor operator-(const Tensor &t);
-    Tensor operator*(const Tensor &t);
-    Tensor operator*(const double &d);
+    Tensor relu();
+    Tensor der_relu();
+    Tensor softmax();
 
     double norm();
     int argmax(); //返回元素最大的rank
 
+    Tensor operator+(const Tensor &t);
+    Tensor operator-() const ;
+    Tensor operator-(const Tensor &t);
+    Tensor operator*(const Tensor &t); //矩阵乘法，默认计算2维
+    Tensor operator*(const double &d); //每个元素乘一个标量
+
 	friend ostream &operator<<(ostream &out, const Tensor &t) {
-        out << "[";
-		for (int _row = 0; _row < t._row_num; _row++) {
-			out << "[";
-			for (int _col = 0; _col < t._col_num - 1; _col++)
-				out << t.elem(_row, _col) << ", ";
-			out << t.elem(_row, t._col_num - 1) << "]";
-            if (_row < t._row_num - 1) out << ",\n";
-		}
-        out << "]\n";
+        for (auto it : t._elem) out << it << " ";
+        out << endl;
 		return out;
 	}
-
-    friend istream &operator>>(istream &in, Tensor &t) { //默认输入格式为[ [ 0 , 1 ] , [ 1 , 2 ] ]
-        string cmd, input;
-        getline(in, cmd);
-        istringstream ist(cmd);
-        int row_num = 0, size_num = 0;
-        vector<double> new_elem;
-        ist >> input;
-        while (ist >> input) {
-            if (input == "," || input == "]")
-                continue;
-            else if (input == "[") //如果是"["则行数增加
-                row_num++;
-            else {
-                double val = atof(input.c_str());
-                size_num++;
-                new_elem.push_back(val);
-            }
-        }
-        t = Tensor(row_num, size_num / row_num, new_elem);
-        return in;
-    }
 };
 
 const string Tensor::ErrMsg = "ERROR: shape of tensor incompatible";
 
-int Tensor::broadcast_cap(const Tensor &t) { //似乎没有必要，只需要判断相容即可
-    int exp_type = MATCH;
-    if (row() != t.row()) {
-        if (row() == 1) exp_type += OP1_EXP_ROW;
-        else if (t.row() == 1) exp_type += OP2_EXP_ROW;
-        else return NOT_CAP;
-    }
-    if (col() != t.col()) {
-        if (col() == 1) exp_type += OP1_EXP_COL;
-        else if (t.col() == 1) exp_type += OP2_EXP_COL;
-        else return NOT_CAP;
-    }
-    return exp_type;
+bool Tensor::broadcast_cap(const Tensor &t) {
+    bool cap = true;
+    for (int d = 0; d < _dim; d++)
+        if (shape_size(d) != 1 && t.shape_size(d) != 1 && shape_size(d) != t.shape_size(d))
+            return !cap;
+    return cap;
 }
 
+//只针对二维Tensor
 Tensor &Tensor::transpose() {
-    if (_row_num == 1 || _col_num == 1) swap(_row_num, _col_num);
+    if (_dim != 2) throw ErrMsg;
+    if (shape_size(0) == 1 || shape_size(1) == 1) swap(_shape[0], _shape[1]);
     else {
-        vector<double> new_elem = vector<double>(size());
-        for (int _row = 0; _row < _col_num; _row++)
-            for (int _col = 0; _col < _row_num; _col++)
-                new_elem[_row * _row_num + _col] = elem(_col, _row);
+        vector<double> new_elem(size());
+        for (int row = 0; row < _shape[1]; row++)
+            for (int col = 0; col < _shape[0]; col++)
+                new_elem[row * _shape[0] + col] = elem(col * _shape[1] + row);
         _elem = new_elem;
-        swap(_row_num, _col_num);
+        swap(_shape[0], _shape[1]);
     }
     return *this;
 }
 
 Tensor &Tensor::reshape(const Shape &new_shape){
     if (!size_cap(new_shape)) throw ErrMsg;
-    _row_num = new_shape.first; _col_num = new_shape.second;
+    _dim = new_shape.size(); //更新维度
+    _shape.resize(_dim);
+    for (int d = 0; d < _dim; d++)
+        _shape[d] = new_shape[d]; //更新每一维尺寸
     return *this;
 }
 
 Tensor Tensor::broadcast_sum(const Tensor &t) {
-    int exp_type = broadcast_cap(t);
-    if (exp_type < 0) throw ErrMsg;
-    int row_iter = (exp_type & 1) ? t.row() : row(); //只需要找最大值
-    int col_iter = (exp_type >> 1 & 1) ? t.col() : col(); //只需要找最大值
-    vector<double> new_elem = vector<double>(row_iter * col_iter);
-    for (int _row = 0; _row < row_iter; _row++) 
-        for (int _col = 0; _col < col_iter; _col++) 
-            new_elem[_row * col_iter + _col] = elem(_row % row(), _col % col()) + t.elem(_row % t.row(), _col % t.col());
-    Tensor sum = Tensor(row_iter, col_iter, new_elem);
+    if (!broadcast_cap(t)) throw ErrMsg;
+    Shape new_shape(_dim), shape_rank(_dim);
+    for (int d = 0; d < _dim; d++) new_shape[d] = max(shape_size(d), t.shape_size(d)); //判断可以broadcast后只需要取最大即可
+    int new_size = shape2size(new_shape);
+    vector<double> new_elem(new_size);
+    for (int rank = 0; rank < new_size; rank++) {
+        shape_rank = rank2shape_rank(rank, new_shape); //取出对应的每个维度的分量
+        new_elem[rank] = elem(shape_rank) + t.elem(shape_rank); //这里按之前所说，模两个Tensor在每个维度的尺寸，即可做到broadcast，所以在shape_rank2rank中采用了取模操作
+    }
+    Tensor sum = Tensor(new_shape, new_elem);
     return sum;
 }
 
@@ -163,46 +154,63 @@ Tensor Tensor::broadcast_min(const Tensor &t) {
 }
 
 Tensor Tensor::broadcast_mul(const Tensor &t) {
-    int exp_type = broadcast_cap(t);
-    if (exp_type < 0) throw ErrMsg;
-    int row_iter = (exp_type & 1) ? t.row() : row(); //只需要找最大值
-    int col_iter = (exp_type >> 1 & 1) ? t.col() : col(); //只需要找最大值
-    vector<double> new_elem = vector<double>(row_iter * col_iter);
-    for (int _row = 0; _row < row_iter; _row++) 
-        for (int _col = 0; _col < col_iter; _col++) 
-            new_elem[_row * col_iter + _col] = elem(_row % row(), _col % col()) * t.elem(_row % t.row(), _col % t.col());
-    Tensor prod = Tensor(row_iter, col_iter, new_elem);
+    if (!broadcast_cap(t)) throw ErrMsg;
+    Shape new_shape(_dim), shape_rank(_dim);
+    for (int d = 0; d < _dim; d++) new_shape[d] = max(shape_size(d), t.shape_size(d)); //判断可以broadcast后只需要取最大即可
+    int new_size = shape2size(new_shape);
+    vector<double> new_elem(new_size);
+    for (int rank = 0; rank < new_size; rank++) {
+        shape_rank = rank2shape_rank(rank, new_shape); //取出对应的每个维度的分量
+        new_elem[rank] = elem(shape_rank) * t.elem(shape_rank); //这里按之前所说，模两个Tensor在每个维度的尺寸，即可做到broadcast，所以在shape_rank2rank中采用了取模操作
+    }
+    Tensor prod = Tensor(new_shape, new_elem);
     return prod;
 }
 
-//0代表左右相拼，1代表上下相拼
-Tensor Tensor::concat(const Tensor &t, const int &op_dim) {
-    Tensor res;
-    if (op_dim) {
-        if (!col_cap(t)) throw ErrMsg;
-        int row_num = row() + t.row(), col_num = col();
-        vector<double> new_elem = vector<double>(row_num * col_num);
-        for (int _row = 0; _row < _row_num; _row++)
-            for (int _col = 0; _col < col_num; _col++)
-                new_elem[_row * col_num + _col] = elem(_row, _col);
-        for (int _row = _row_num; _row < row_num; _row++)
-            for (int _col = 0; _col < col_num; _col++)
-                new_elem[_row * col_num + _col] = t.elem(_row - _row_num, _col);
-        res = Tensor(row_num, col_num, new_elem);
-    }
-    else {
-        if (!row_cap(t)) throw ErrMsg;
-        int row_num = row(), col_num = col() + t.col();
-        vector<double> new_elem = vector<double>(row_num * col_num);
-        for (int _row = 0; _row < row_num; _row++) {
-            for (int _col = 0; _col < _col_num; _col++)
-                new_elem[_row * col_num + _col] = elem(_row, _col);
-            for (int _col = _col_num; _col < col_num; _col++)
-                new_elem[_row * col_num + _col] = t.elem(_row, _col - _col_num);
+Tensor Tensor::concat(const Tensor &t, const int &op_dim) { //大致思路是：通过新Tensor当前rank对应的各维度分量，如果在op_dim分量小于this在op_dim的尺寸，就应该是this的元素，否则是t的
+    for (int d = 0; d < _dim; d++)
+        if (d != op_dim && !shape_cap(t, d)) //判断其余维度的相容性
+            throw ErrMsg;
+    Shape new_shape = _shape, shape_rank(_dim);
+    new_shape[op_dim] += t.shape_size(op_dim);
+    int new_size = shape2size(new_shape);
+    vector<double> new_elem(new_size);
+    for (int rank = 0; rank < new_size; rank++) {
+        shape_rank = rank2shape_rank(rank, new_shape);
+        if (shape_rank[op_dim] < shape_size(op_dim))
+            new_elem[rank] = elem(shape_rank);
+        else {
+            shape_rank[op_dim] -= shape_size(op_dim);
+            new_elem[rank] = t.elem(shape_rank);
         }
-        res = Tensor(row_num, col_num, new_elem);
     }
-    return res;
+    return Tensor(new_shape, new_elem);
+}
+
+Tensor Tensor::relu() {
+    int new_size = size();
+    vector<double> new_elem(new_size);
+    for (int rank = 0; rank < new_size; rank++)
+        new_elem[rank] = max(0.0, _elem[rank]);
+    return Tensor(shape(), new_elem);
+}
+
+Tensor Tensor::der_relu() {
+    int new_size = size();
+    vector<double> new_elem(new_size);
+    for (int rank = 0; rank < new_size; rank++)
+        new_elem[rank] = (_elem[rank] > 0) ? 1.0 : 0.0;
+    return Tensor(shape(), new_elem);
+}
+
+Tensor Tensor::softmax() {
+    int new_size = size();
+    vector<double> new_elem(new_size);
+    double sum = 0.0;
+    for (auto it : _elem) sum += exp(it);
+    for (int rank = 0; rank < new_size; rank++)
+        new_elem[rank] = _elem[rank] / sum;
+    return Tensor(shape(), new_elem);
 }
 
 Tensor Tensor::operator+(const Tensor &t) { //按正常的矩阵加法，也可以调用broadcast_sum
@@ -219,28 +227,31 @@ Tensor Tensor::operator-(const Tensor &t) {
 }
 
 Tensor Tensor::operator*(const Tensor &t) {
-    if (!mul_cap(t)) throw ErrMsg;
-    int row_num = row(), col_num = t.col();
-    vector<double> new_elem = vector<double>(row_num * col_num);
-    for (int _row = 0; _row < row_num; _row++) {
-        for (int _col = 0; _col < col_num; _col++) {
-            double val = 0;
-            for (int i = 0; i < col(); i++)
-                val += elem(_row, i) * t.elem(i, _col);
+    if (dim() != 2 || t.dim() != 2 || shape_size(1) != t.shape_size(0)) throw ErrMsg;
+    Shape new_shape(2); new_shape[0] = shape_size(0); new_shape[1] = t.shape_size(1); 
+    int new_size = shape2size(new_shape);
+    vector<double> new_elem(new_size);
+    for (int row = 0; row < new_shape[0]; row++) {
+        for (int col = 0; col < new_shape[1]; col++) {
+            double val = 0.0;
+            for (int i = 0; i < shape_size(1); i++)
+                val += elem(row * shape_size(1) + i) * t.elem(i * t.shape_size(1) + col);
+            new_elem[row * new_shape[1] + col] = val;
         }
     }
-    Tensor prod = Tensor(row_num, col_num, new_elem);
-    return prod;    
+    Tensor prod = Tensor(new_shape, new_elem);
+    return prod;
 }
 
-Tensor Tensor::operator*(const double &d)
-{
-    return broadcast_mul(Tensor(1, 1, d));
+Tensor Tensor::operator*(const double &d) {
+    Shape new_shape(1); new_shape[0] = 1;
+    return broadcast_mul(Tensor(new_shape, d));
 }
 
 int Tensor::argmax() {
     double max_elem = elem(0); int max_rank = 0;
-    for (int i = 1; i < size(); i++) 
+    int total_size = size();
+    for (int i = 1; i < total_size; i++) 
         if (elem(i) > max_elem) {
             max_elem = elem(i); max_rank = i;
         }
