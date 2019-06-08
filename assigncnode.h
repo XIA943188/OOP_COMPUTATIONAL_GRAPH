@@ -9,7 +9,7 @@
 template <typename _T>
 class AssignWaitingList{
 public:
-    static std::vector<pair<VarNode<_T>*, _T>> WaitingList;
+    static std::vector<pair<VarNode<_T>*, _T> > WaitingList;
 
     static void Clear(){
         for(auto x : WaitingList){
@@ -24,7 +24,7 @@ public:
 };
 
 template<typename _T>
-std::vector<pair<VarNode<_T>*, _T>> AssignWaitingList<_T>::WaitingList(0);
+std::vector<pair<VarNode<_T>*, _T> > AssignWaitingList<_T>::WaitingList(0);
 
 template <typename _T>
 class AssignCNode : public CalcNode<_T>
