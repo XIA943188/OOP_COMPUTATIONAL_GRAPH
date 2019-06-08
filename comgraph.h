@@ -8,6 +8,7 @@
 #include "prinode.h"
 #include "varnode.h"
 #include "calcnode.h"
+#include "assigncnode.h"
 
 using namespace std;
 
@@ -173,6 +174,7 @@ _T ComGraph<_T>::Eval(string NodeName, vector<pair<string, _T>> PHList)
 	_T Res;
 	try {
 		Res = Target->GetVal(); //计算
+		AssignWaitingList<_T>::Clear();
 	}
 	catch (string &ErrMsg) {
 		Target->Clear(); //清除中间结果

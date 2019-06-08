@@ -23,6 +23,9 @@ public:
     }
 };
 
+template<typename _T>
+std::vector<pair<VarNode<_T>*, _T>> AssignWaitingList<_T>::WaitingList(0);
+
 template <typename _T>
 class AssignCNode : public CalcNode<_T>
 {
@@ -46,7 +49,7 @@ template<typename _T>
 _T AssignCNode<_T>::Calc()
 {
     Result = new _T(Operands[1]->GetVal());
-    AssignWaitingList<_T>::Insert(Operands[0], *Result);
+    AssignWaitingList<_T>::Insert(dynamic_cast<VarNode<_T> *>(Operands[0]), *Result);
     return *Result;
 }
 

@@ -1,11 +1,17 @@
-main: main.o
-	g++ -o main main.o
+main1: main1.o
+	g++ -o main1 main1.o
 
-main.o: main.cpp
-	g++ -c main.cpp -std=c++14
+main1.o: main1.cpp
+	g++ -c main1.cpp -std=c++14
+
+main2: main2.o
+	g++ -o main2 main2.o
+
+main2.o: main2.cpp
+	g++ -c main2.cpp -std=c++14
+
+main3: newton.cpp
+	g++ -o main3 newton.cpp -std=c++14
 
 clean:
-	rm main *.o
-
-main2: newton.cpp
-	g++ -o main2 newton.cpp -std=c++14
+	rm main1 main2 main3 *.o

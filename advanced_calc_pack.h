@@ -8,5 +8,8 @@
 #include "sigcnode.h"
 #include "gradcnode.h"
 #include "dercnode.h"
+#include "assertcnode.h"
+#include "bindcnode.h"
+#include "assigncnode.h"
 
 #endif
