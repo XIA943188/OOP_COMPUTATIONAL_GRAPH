@@ -82,7 +82,7 @@ public:
 
     bool size_cap(const Shape &s) { return (size() == shape2size(s)); } //比较元素个数是否相容
     bool broadcast_cap(const Tensor &t) const; //比较是否能够broadcast
-    bool shape_cap(const Tensor &t, const int &dim) { return (shape_size(dim) == t.shape_size(dim)); } //比较在dim维度是否相容，用于concat
+    bool shape_cap(const Tensor &t, const int &dim) const { return (shape_size(dim) == t.shape_size(dim)); } //比较在dim维度是否相容，用于concat
 
     Tensor &transpose();
     Tensor &reshape(const Shape &new_shape);
@@ -94,8 +94,8 @@ public:
     Tensor der_relu() const;
     Tensor softmax() const;
 
-    double norm();
-    int argmax(); //返回元素最大的rank
+    double norm() const;
+    int argmax() const; //返回元素最大的rank
 
     Tensor operator+(const Tensor &t);
     Tensor operator-() const ;
@@ -276,7 +276,7 @@ Tensor Tensor::operator*(const double &d) {
     return broadcast_mul(Tensor(new_shape, d));
 }
 
-int Tensor::argmax() {
+int Tensor::argmax() const {
     double max_elem = elem(0); int max_rank = 0;
     int total_size = size();
     for (int i = 1; i < total_size; i++) 
@@ -286,7 +286,7 @@ int Tensor::argmax() {
     return max_rank;
 }
 
-double Tensor::norm() {
+double Tensor::norm() const {
     double res = 0.0;
     for (auto it : _elem) res += it * it;
     return sqrt(res);
