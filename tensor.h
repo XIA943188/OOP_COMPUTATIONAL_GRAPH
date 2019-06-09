@@ -81,18 +81,18 @@ public:
     double elem(const Shape &shape_rank) const { return elem(shape_rank2rank(shape_rank, _shape)); }
 
     bool size_cap(const Shape &s) { return (size() == shape2size(s)); } //比较元素个数是否相容
-    bool broadcast_cap(const Tensor &t); //比较是否能够broadcast
+    bool broadcast_cap(const Tensor &t) const; //比较是否能够broadcast
     bool shape_cap(const Tensor &t, const int &dim) { return (shape_size(dim) == t.shape_size(dim)); } //比较在dim维度是否相容，用于concat
 
     Tensor &transpose();
     Tensor &reshape(const Shape &new_shape);
-    Tensor broadcast_sum(const Tensor &t);
-    Tensor broadcast_min(const Tensor &t);
-    Tensor broadcast_mul(const Tensor &t); //broadcast版本的乘法
-    Tensor concat(const Tensor &t, const int &op_dim);
-    Tensor relu();
-    Tensor der_relu();
-    Tensor softmax();
+    Tensor broadcast_sum(const Tensor &t) const;
+    Tensor broadcast_min(const Tensor &t) const;
+    Tensor broadcast_mul(const Tensor &t) const; //broadcast版本的乘法
+    Tensor concat(const Tensor &t, const int &op_dim) const;
+    Tensor relu() const;
+    Tensor der_relu() const;
+    Tensor softmax() const;
 
     double norm();
     int argmax(); //返回元素最大的rank
@@ -103,7 +103,7 @@ public:
     Tensor operator*(const Tensor &t); //矩阵乘法，默认计算2维
     Tensor operator*(const double &d); //每个元素乘一个标量
 
-    friend ostream &operator<<(ostream &out, const Tensor &t) {
+	friend ostream &operator<<(ostream &out, const Tensor &t) {
         int size_ = t.size(), dim_ = t.dim(); bool left_flag = true;
         for (int rank = 0; rank <= size_; rank++) {
             int count = rank2count(rank, t._shape);
@@ -125,13 +125,13 @@ public:
             }
         }
         out << "\n";
-	return out;
-    }
+	    return out;
+	}
 };
 
 const string Tensor::ErrMsg = "ERROR: shape of tensor incompatible";
 
-bool Tensor::broadcast_cap(const Tensor &t) {
+bool Tensor::broadcast_cap(const Tensor &t) const {
     bool cap = true;
     for (int d = 0; d < _dim; d++)
         if (shape_size(d) != 1 && t.shape_size(d) != 1 && shape_size(d) != t.shape_size(d))
@@ -163,7 +163,7 @@ Tensor &Tensor::reshape(const Shape &new_shape){
     return *this;
 }
 
-Tensor Tensor::broadcast_sum(const Tensor &t) {
+Tensor Tensor::broadcast_sum(const Tensor &t) const {
     if (!broadcast_cap(t)) throw ErrMsg;
     Shape new_shape(_dim), shape_rank(_dim);
     for (int d = 0; d < _dim; d++) new_shape[d] = max(shape_size(d), t.shape_size(d)); //判断可以broadcast后只需要取最大即可
@@ -177,11 +177,11 @@ Tensor Tensor::broadcast_sum(const Tensor &t) {
     return sum;
 }
 
-Tensor Tensor::broadcast_min(const Tensor &t) {
+Tensor Tensor::broadcast_min(const Tensor &t) const {
     return broadcast_sum(-t);
 }
 
-Tensor Tensor::broadcast_mul(const Tensor &t) {
+Tensor Tensor::broadcast_mul(const Tensor &t) const {
     if (!broadcast_cap(t)) throw ErrMsg;
     Shape new_shape(_dim), shape_rank(_dim);
     for (int d = 0; d < _dim; d++) new_shape[d] = max(shape_size(d), t.shape_size(d)); //判断可以broadcast后只需要取最大即可
@@ -195,7 +195,7 @@ Tensor Tensor::broadcast_mul(const Tensor &t) {
     return prod;
 }
 
-Tensor Tensor::concat(const Tensor &t, const int &op_dim) { //大致思路是：通过新Tensor当前rank对应的各维度分量，如果在op_dim分量小于this在op_dim的尺寸，就应该是this的元素，否则是t的
+Tensor Tensor::concat(const Tensor &t, const int &op_dim) const { //大致思路是：通过新Tensor当前rank对应的各维度分量，如果在op_dim分量小于this在op_dim的尺寸，就应该是this的元素，否则是t的
     for (int d = 0; d < _dim; d++)
         if (d != op_dim && !shape_cap(t, d)) //判断其余维度的相容性
             throw ErrMsg;
@@ -215,7 +215,7 @@ Tensor Tensor::concat(const Tensor &t, const int &op_dim) { //大致思路是：
     return Tensor(new_shape, new_elem);
 }
 
-Tensor Tensor::relu() {
+Tensor Tensor::relu() const {
     int new_size = size();
     vector<double> new_elem(new_size);
     for (int rank = 0; rank < new_size; rank++)
@@ -223,7 +223,7 @@ Tensor Tensor::relu() {
     return Tensor(shape(), new_elem);
 }
 
-Tensor Tensor::der_relu() {
+Tensor Tensor::der_relu() const {
     int new_size = size();
     vector<double> new_elem(new_size);
     for (int rank = 0; rank < new_size; rank++)
@@ -231,7 +231,7 @@ Tensor Tensor::der_relu() {
     return Tensor(shape(), new_elem);
 }
 
-Tensor Tensor::softmax() {
+Tensor Tensor::softmax() const {
     int new_size = size();
     vector<double> new_elem(new_size);
     double sum = 0.0;
