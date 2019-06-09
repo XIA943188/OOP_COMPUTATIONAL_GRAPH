@@ -39,6 +39,15 @@ int shape_rank2rank(const Shape &shape_rank, const Shape &shape) { //将每个�
     return rank;
 }
 
+int rank2count(const int &rank, const Shape &shape) {
+    auto shape_rank = rank2shape_rank(rank, shape);
+    int dim = shape_rank.size(), count = 0;
+    for (int d = dim - 1; d >= 0; d--)
+        if (shape_rank[d] == 0) count++;
+        else break;
+    return count;
+}
+
 class Tensor {
     vector<double> _elem;
     int _dim; //维数
@@ -95,9 +104,28 @@ public:
     Tensor operator*(const double &d); //每个元素乘一个标量
 
 	friend ostream &operator<<(ostream &out, const Tensor &t) {
-        for (auto it : t._elem) out << it << " ";
-        out << endl;
-		return out;
+        int size_ = t.size(), dim_ = t.dim(); bool left_flag = true;
+        for (int rank = 0; rank <= size_; rank++) {
+            int count = rank2count(rank, t._shape);
+            if (count == dim_) //需要输出左括号
+                if (left_flag) {
+                    while (count--) out << "[";
+                    left_flag = false;
+                    out << t.elem(rank);
+                }
+                else
+                    while (count--) out << "]";
+            else {
+                int count_ = count;
+                while (count_--) out << "]";
+                if (count >= dim_ - 1 && count) out << "\n";
+                else out << " ";
+                while (count--) out << "[";
+                out << t.elem(rank);
+            }
+        }
+        out << "\n";
+	    return out;
 	}
 };
 
