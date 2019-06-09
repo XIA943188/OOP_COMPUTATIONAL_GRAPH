@@ -103,7 +103,7 @@ public:
     Tensor operator*(const Tensor &t); //矩阵乘法，默认计算2维
     Tensor operator*(const double &d); //每个元素乘一个标量
 
-	friend ostream &operator<<(ostream &out, const Tensor &t) {
+    friend ostream &operator<<(ostream &out, const Tensor &t) {
         int size_ = t.size(), dim_ = t.dim(); bool left_flag = true;
         for (int rank = 0; rank <= size_; rank++) {
             int count = rank2count(rank, t._shape);
@@ -125,8 +125,8 @@ public:
             }
         }
         out << "\n";
-	    return out;
-	}
+	return out;
+    }
 };
 
 const string Tensor::ErrMsg = "ERROR: shape of tensor incompatible";
