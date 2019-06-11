@@ -1,28 +1,47 @@
 #ifndef MSE_LOSS_FUNCTION
 #define MSE_LOSS_FUNCTION
-#include "loss.h"
+#include "losscnode.h"
 
-class MSELoss : public LossFunction{
+class MSELoss : public LossCNode{
 private:
     static const std::string DimErrMsg;
+
+    Tensor target;
+
+protected:
+    Tensor Calc(); //重载Calc，在这里进行计算
+	Tensor DerCalc(Node <Tensor> *operand);
+
 public:
-    Tensor operator() (const Tensor& ans, const Tensor& target);//输入矩阵维度为ans(bat*dim), target(bat*dim)，输出矩阵维度为dim
+    Tensor operator() (const Tensor& ans, const Tensor& target);//输入矩阵维度为ans(dim), target(dim)，输出维度为1
 };
 
 const std::string MSELoss::DimErrMsg = "Dimension Mismatched.";
 
-Tensor MSELoss::operator() (const Tensor& ans, const Tensor& target){
-    if(ans.dim() != 2 || target.dim() != 2 || ans.shape_size(0) != target.shape_size(0) || ans.shape_size(1) != target.shape_size(1))
+Tensor MSELoss::Calc(){
+    Tensor ans = Operands[0]->GetVal();
+    if(ans.dim() != 1 || target.dim() != 1 || ans.shape_size(0) != target.shape_size(0))
         throw DimErrMsg;
-    Tensor output(Shape({ans.shape_size(0)}), 0.0f);
-    for(int i = 0; i < output.shape_size(0); i++){
-        for(int j = 0; j < ans.shape_size(1); j++){
-            double a = ans.elem(Shape({i, j})), b = target.elem(Shape({i, j}));
-            output.elem(i) += (a-b) * (a-b);
-        }
-        output.elem(i) /= ans.shape_size(1);
+    Tensor output(Shape({1}), 0.0f);
+    for(int i = 0; i < ans.shape_size(0); i++){
+        double a = ans.elem(i), b = target.elem(i);
+        output.elem(i) += (a-b) * (a-b);
     }
+    output.elem(0) /= ans.shape_size(0);
     return output;
 }
 
+Tensor MSELoss::DerCalc(Node <Tensor> *operand){
+    Tensor der;
+    if(this == operand)
+        der = Tensor(Shape({1,1}), 1.0);
+    else{
+        der = Operands[0]->GetVal();
+        der = der - target;
+        der = der * ( 2.0 / double(der.shape_size(0)) );
+        der = der * Operands[0]->GetDer(operand);//此处是否有bug？
+    }
+    DerResult = new Tensor(der);
+    return *DerResult;
+}
 #endif

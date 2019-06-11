@@ -46,6 +46,7 @@ Tensor CrossEntropyLoss::DerCalc(Node<Tensor> * operand){
         der.elem(target)--;
         der = der * Operands[0]->GetDer(operand);//此处是否有bug？
     }
-    return der;
+    DerResult = new Tensor(der);
+    return *DerResult;
 }
 #endif
