@@ -9,8 +9,12 @@
 #include "varnode.h"
 #include "calcnode.h"
 #include "assigncnode.h"
+#include "dercnode.h"
 
-using namespace std;
+using std::vector;
+using std::map;
+using std::string;
+using std::pair;
 
 template<typename _T>
 class ComGraph
@@ -22,7 +26,7 @@ private:
 
 	vector<_T> AnsHistory;
 
-	ostream &ErrOut, &PriOut;
+	std::ostream &ErrOut, &PriOut;
 
 	Node<_T> *GetNode(string);    //获取指定关键字节点的节点地址，{不推荐==>不允许}在类外使用
 
@@ -31,13 +35,13 @@ private:
 	void AddNode(string, Node<_T> *); //由于可能出现重名节点，因此在Index中覆盖时仍要记录被覆盖节点地址，所以新增一个vector
 
 public:
-	ComGraph() : ErrOut(cerr), PriOut(cout)
+	ComGraph() : ErrOut(std::cerr), PriOut(std::cout)
 		//构造时载入错误信息和默认PriNode输出流，默认分别为cerr和cout
 	{
 		Index.clear();
 	}
 
-	ComGraph(ostream &_ErrO, ostream &_PrO) : ErrOut(_ErrO), PriOut(_PrO)
+	ComGraph(std::ostream &_ErrO, std::ostream &_PrO) : ErrOut(_ErrO), PriOut(_PrO)
 		//构造时载入错误信息和默认PriNode输出流，如果要自定义，就必须两个一起自定义
 	{
 		Index.clear();
@@ -64,7 +68,7 @@ public:
 	  只能用来建立CalcNode的派生类节点
 	*/
 
-	_T Eval(string, vector<pair<string, _T>>);
+	_T Eval(string, vector<pair<string, _T> >);
 	//计算答案，vector内用pair存储参数
 
 	Node<_T> *BuildPHNode(string);
@@ -77,7 +81,7 @@ public:
 
 	Node<_T> *BuildPriNode(string, string);
 
-	Node<_T> *BuildPriNode(string, string, ostream &);
+	Node<_T> *BuildPriNode(string, string, std::ostream &);
 
 	_T RecInHistory(_T);//记录某一次操作的答案
 
@@ -89,6 +93,14 @@ public:
 	{
 		clear();
 	}
+
+	void GradientDescend(string, string, const double & = 1e-4); //先这么写着，没想好怎么传进去根节点的DerCNode和参数节点
+
+	_T MomGradientDescend(string, string, const _T &, const double &, const double & = 1e-4);
+
+	void RMSprop(string, string, _T &, const double &, const double & = 1e-4);
+
+	void Adam(string, string, const int &, const double &, const double & = 1e-4, const double & = 0.9, const double & = 0.999);
 };
 //一个安全性考虑，在类外除了节点建立时，不允许通过任何方式获取建立的节点的地址，防止其被提前删除
 
@@ -102,7 +114,7 @@ template<typename _T>
 inline Node<_T> *ComGraph<_T>::GetNode(string NodeName)
 {
 	if (!Index.count(NodeName)) {
-		ErrOut << "NodeName " << NodeName << " not found" << endl;
+		ErrOut << "NodeName " << NodeName << " not found" << std::endl;
 		throw NodeName;
 	} //安全检查，这里抛出的异常我没有处理，会直接杀死程序
 	return Index[NodeName];
@@ -166,7 +178,7 @@ Node<_T> *ComGraph<_T>::BuildCalcNode(string NodeName, int OperandNum, vector<st
 }
 
 template<typename _T>
-_T ComGraph<_T>::Eval(string NodeName, vector<pair<string, _T>> PHList)
+_T ComGraph<_T>::Eval(string NodeName, vector<pair<string, _T> > PHList)
 {
 	for (int i = 0; i < PHList.size(); ++i) SetPHNodeVal(GetNode(PHList[i].first), PHList[i].second);
 	//先对所有占位节点赋值
@@ -225,7 +237,7 @@ Node<_T> *ComGraph<_T>::BuildPriNode(string NodeName, string WatchName)
 }
 
 template<typename _T>
-Node<_T> *ComGraph<_T>::BuildPriNode(string NodeName, string WatchName, ostream &_OSTR)
+Node<_T> *ComGraph<_T>::BuildPriNode(string NodeName, string WatchName, std::ostream &_OSTR)
 {
 	Node<_T> *temp = new PriNode<_T>(WatchName, GetNode(WatchName), _OSTR);
 	AddNode(NodeName, temp);
@@ -262,6 +274,51 @@ void ComGraph<_T>::AddNode(string NodeName, Node<_T> *Point)
 {
 	Index[NodeName] = Point;
 	NodeAddress.push_back(Point);
+}
+
+template<typename _T>
+void ComGraph<_T>::GradientDescend(string LossName, string VarName, const double &lr) {
+	Node<_T> *target = GetNode(LossName), *var = GetNode(VarName);
+	_T der = dynamic_cast<DerCNode<_T> *>(target)->GetVal(); //求导
+	_T new_val = var->GetVal() - der * lr;
+	SetVarVal(VarName, new_val);
+}
+
+template<typename _T>
+_T ComGraph<_T>::MomGradientDescend(string LossName, string VarName, const _T &last_vel, const double &coeff, const double &lr) {
+	Node<_T> *target = GetNode(LossName), *var = GetNode(VarName);
+	_T der = dynamic_cast<DerCNode<_T> *>(target)->GetVal(); //求导
+	_T vel = der * lr + last_vel * coeff;
+	_T new_val = var->GetVal() - vel;
+	SetVarVal(VarName, new_val);
+	return vel;
+}
+
+template<>
+void ComGraph<Tensor>::RMSprop(string LossName, string VarName, Tensor &grad_square, const double &decay, const double &lr) {
+	Node<Tensor> *target = GetNode(LossName), *var = GetNode(VarName);
+	Tensor der = dynamic_cast<DerCNode<Tensor> *>(target)->GetVal(); //求导
+	grad_square = grad_square * decay + (der.broadcast_mul(der)) * (1 - decay);
+	Tensor new_val = var->GetVal() - der.broadcast_div(grad_square.sqrt() + Tensor(grad_square.shape(), 1e-8)) * lr;
+	SetVarVal(VarName, new_val);
+}
+
+template<>
+void ComGraph<Tensor>::Adam(string LossName, string VarName, const int &iter_num, const double &decay, const double &lr, const double &beta_1, const double &beta_2) {
+	int iter = 0;
+	Node<Tensor> *target = GetNode(LossName), *var = GetNode(VarName);
+	Tensor first_mom = Tensor(var->GetVal().shape(), 0.0), second_mom = Tensor(var->GetVal().shape(), 0.0);
+	double beta_1_pow = 1., beta_2_pow = 1.;
+	while (iter++ < iter_num) {
+		beta_1_pow *= beta_1; beta_2_pow *= beta_2;
+		Tensor der = dynamic_cast<DerCNode<Tensor> *>(target)->GetVal(); //求导
+		first_mom = first_mom * beta_1 + der * (1 - beta_1);
+		second_mom = second_mom * beta_2 + der.broadcast_mul(der) * (1 - beta_2);
+		auto first_unbias = first_mom * (1. / (1. - beta_1_pow));
+		auto second_unbias = second_mom * (1. / (1. - beta_2_pow));
+		Tensor new_val = var->GetVal() - first_unbias.broadcast_div(second_unbias.sqrt() + Tensor(grad_square.shape(), 1e-8)) * lr;
+		SetVarVal(VarName, new_val);
+	}
 }
 
 #endif //COMPUTATIONAL_GRAPH_COMGRAPH_H

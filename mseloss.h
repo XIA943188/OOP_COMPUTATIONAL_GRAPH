@@ -12,7 +12,7 @@ public:
 const std::string MSELoss::DimErrMsg = "Dimension Mismatched.";
 
 Tensor MSELoss::operator() (const Tensor& ans, const Tensor& target){
-    if(ans.shape().size() != 2 || target.shape().size() != 2 || ans.shape_size(0) != target.shape_size(0) || ans.shape_size(1) != target.shape_size(1))
+    if(ans.dim() != 2 || target.dim() != 2 || ans.shape_size(0) != target.shape_size(0) || ans.shape_size(1) != target.shape_size(1))
         throw DimErrMsg;
     Tensor output(Shape({ans.shape_size(0)}), 0.0f);
     for(int i = 0; i < output.shape_size(0); i++){
