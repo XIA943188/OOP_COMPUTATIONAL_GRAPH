@@ -56,7 +56,7 @@ public:
     Tensor() {}
     Tensor(const Shape &shape_, const Elem &elem_): _dim(shape_.size()), _shape(shape_), _elem(elem_) {} //通过shape和elem构造
     Tensor(const Shape &shape_, Elem &&elem_): _dim(shape_.size()), _shape(shape_) { _elem = std::move(elem_); }
-    Tensor(const Shape &shape_, const double &val_ = 0.0):  _dim(shape_.size()), _shape(shape_) { //默认所有元素均为d，形状为shape（只在标量乘法用到）
+    Tensor(const Shape &shape_, const double &val_):  _dim(shape_.size()), _shape(shape_) { //默认所有元素均为d，形状为shape（只在标量乘法用到）
         _elem = Elem(size());
         for (auto it : _elem) it = val_;
     }
@@ -93,10 +93,12 @@ public:
     Tensor broadcast_sum(const Tensor &t) const;
     Tensor broadcast_min(const Tensor &t) const;
     Tensor broadcast_mul(const Tensor &t) const; //broadcast版本的乘法
+    Tensor broadcast_div(const Tensor &t) const;
     Tensor concat(const Tensor &t, const int &op_dim) const;
     Tensor relu() const;
     Tensor der_relu() const;
     Tensor softmax() const;
+    Tensor sqrt() const;
 
     double norm() const;
     int argmax() const; //返回元素最大的rank
@@ -199,6 +201,20 @@ Tensor Tensor::broadcast_mul(const Tensor &t) const {
     return prod;
 }
 
+Tensor Tensor::broadcast_div(const Tensor &t) const {
+    if (!broadcast_cap(t)) throw ErrMsg;
+    Shape new_shape(_dim), shape_rank(_dim);
+    for (int d = 0; d < _dim; d++) new_shape[d] = std::max(shape_size(d), t.shape_size(d)); //判断可以broadcast后只需要取最大即可
+    int new_size = shape2size(new_shape);
+    Elem new_elem(new_size);
+    for (int rank = 0; rank < new_size; rank++) {
+        shape_rank = rank2shape_rank(rank, new_shape); //取出对应的每个维度的分量
+        new_elem[rank] = elem(shape_rank) / t.elem(shape_rank); //这里按之前所说，模两个Tensor在每个维度的尺寸，即可做到broadcast，所以在shape_rank2rank中采用了取模操作
+    }
+    Tensor prod = Tensor(new_shape, new_elem);
+    return prod;
+}
+
 Tensor Tensor::concat(const Tensor &t, const int &op_dim) const { //大致思路是：通过新Tensor当前rank对应的各维度分量，如果在op_dim分量小于this在op_dim的尺寸，就应该是this的元素，否则是t的
     for (int d = 0; d < _dim; d++)
         if (d != op_dim && !shape_cap(t, d)) //判断其余维度的相容性
@@ -245,6 +261,30 @@ Tensor Tensor::softmax() const {
     return Tensor(shape(), new_elem);
 }
 
+Tensor Tensor::sqrt() const {
+    int new_size = size();
+    Elem new_elem(new_size);
+    for (int rank = 0; rank < new_size; rank++)
+        new_elem[rank] = std::sqrt(_elem[rank]);
+    return Tensor(shape(), new_elem);
+}
+
+int Tensor::argmax() const {
+    double max_elem = elem(0); int max_rank = 0;
+    int total_size = size();
+    for (int i = 1; i < total_size; i++) 
+        if (elem(i) > max_elem) {
+            max_elem = elem(i); max_rank = i;
+        }
+    return max_rank;
+}
+
+double Tensor::norm() const {
+    double res = 0.0;
+    for (auto it : _elem) res += it * it;
+    return std::sqrt(res);
+}
+
 Tensor Tensor::operator+(const Tensor &t) { //按正常的矩阵加法，也可以调用broadcast_sum
     return broadcast_sum(t);
 }
@@ -278,22 +318,6 @@ Tensor Tensor::operator*(const Tensor &t) {
 Tensor Tensor::operator*(const double &d) {
     Shape new_shape(1); new_shape[0] = 1;
     return broadcast_mul(Tensor(new_shape, d));
-}
-
-int Tensor::argmax() const {
-    double max_elem = elem(0); int max_rank = 0;
-    int total_size = size();
-    for (int i = 1; i < total_size; i++) 
-        if (elem(i) > max_elem) {
-            max_elem = elem(i); max_rank = i;
-        }
-    return max_rank;
-}
-
-double Tensor::norm() const {
-    double res = 0.0;
-    for (auto it : _elem) res += it * it;
-    return sqrt(res);
 }
 
 

@@ -43,7 +43,7 @@ double PluCNode<double>::DerCalc(Node <double> *operand)
 template<>
 Tensor PluCNode<Tensor>::DerCalc(Node <Tensor> *operand)
 {
-    Tensor der = (this == operand) ? Tensor(1, 1, 1.0) : Operands[0]->GetDer(operand) + Operands[1]->GetDer(operand);
+    Tensor der = (this == operand) ? Tensor(Shape({1, 1}), 1.0) : Operands[0]->GetDer(operand) + Operands[1]->GetDer(operand);
     DerResult = new Tensor(der);
     return *DerResult;
 }

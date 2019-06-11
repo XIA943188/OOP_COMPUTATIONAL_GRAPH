@@ -14,7 +14,7 @@ const std::string CrossEntropyLoss::DimErrMsg = "Dimension Mismatched.";
 const std::string CrossEntropyLoss::RankErrMsg = "The rank in target out of range.";
 
 Tensor CrossEntropyLoss::operator() (const Tensor& ans, const Tensor& target){
-    if(ans.shape().size() != 2 || target.shape().size() != 1 || ans.shape_size(0) != target.shape_size(0))
+    if(ans.dim() != 2 || target.dim() != 1 || ans.shape_size(0) != target.shape_size(0))
         throw DimErrMsg;
     Tensor output(target.shape(), 0.0f);
     for(int i = 0; i < output.shape_size(0); i++){

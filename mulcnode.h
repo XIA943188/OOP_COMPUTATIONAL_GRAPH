@@ -43,7 +43,7 @@ double MulCNode<double>::DerCalc(Node <double> *operand)
 template<>
 Tensor MulCNode<Tensor>::DerCalc(Node <Tensor> *operand) //这里估计有bug
 {
-    Tensor der = (this == operand) ? Tensor(1, 1, 1.0) 
+    Tensor der = (this == operand) ? Tensor(Shape({1, 1}), 1.0) 
 		: Operands[0]->GetDer(operand).broadcast_mul(Operands[1]->GetVal().transpose())
 		.broadcast_sum(Operands[0]->GetVal().broadcast_mul(Operands[1]->GetDer(operand)));
 	DerResult = new Tensor(der);
