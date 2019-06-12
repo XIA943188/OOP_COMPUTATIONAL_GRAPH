@@ -32,7 +32,7 @@ Tensor MSELoss<Tensor>::Calc(){
     Tensor output(Shape({1}), 0.0f);
     for(int i = 0; i < ans.shape_size(0); i++){
         double a = ans.elem(i), b = target.elem(i);
-        output.elem(i) += (a-b) * (a-b);
+        output.elem(0) += (a-b) * (a-b);
     }
     output.elem(0) /= ans.shape_size(0);
     Result = new Tensor(output);
