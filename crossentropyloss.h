@@ -9,16 +9,15 @@ private:
     static const std::string RankErrMsg;
 
 protected:
-	_T Calc(); //重载Calc，在这里进行计算
-	_T DerCalc(Node <Tensor> *operand);
-
-    //输入矩阵维度为ans(label), target(1)，输出矩阵维度为1
+	Tensor Calc(); //重载Calc，在这里进行计算
+	Tensor DerCalc(Node <Tensor> *operand);
 public:
     using CalcNode<_T>::Result;
     using CalcNode<_T>::DerResult;
     using CalcNode<_T>::OperandNum;
     using CalcNode<_T>::Operands;
     using CalcNode<_T>::CalcNode;
+    //输入矩阵维度为ans(label)，输出矩阵维度为1，target为int变量
 };
 
 template <typename _T>
@@ -27,7 +26,7 @@ const std::string CrossEntropyLoss<_T>::DimErrMsg = "Dimension Mismatches.";
 template <typename _T>
 const std::string CrossEntropyLoss<_T>::RankErrMsg = "The rank in target is out of range.";
 
-template <>
+template<>
 Tensor CrossEntropyLoss<Tensor>::Calc(){
     Tensor softmax = Operands[0]->GetVal().softmax();
     Tensor target = Operands[1]->GetVal();
@@ -37,10 +36,11 @@ Tensor CrossEntropyLoss<Tensor>::Calc(){
     if(target.elem(0) < 0 || target.elem(0) >= softmax.shape_size(0))
         throw RankErrMsg;
     output.elem(0) = - 1 * log(softmax.elem(target.elem(0)));
-    return output;
+    Result = new Tensor(output);
+    return *Result;
 }
 
-template <>
+template<>
 Tensor CrossEntropyLoss<Tensor>::DerCalc(Node<Tensor> * operand){
     Tensor der;
     if(this == operand)
@@ -53,7 +53,7 @@ Tensor CrossEntropyLoss<Tensor>::DerCalc(Node<Tensor> * operand){
         if(target.elem(0) < 0 || target.elem(0) >= der.shape_size(0))
             throw RankErrMsg;
         der.elem(target.elem(0))--;
-        der = der * Operands[0]->GetDer(operand);
+        der = der * Operands[0]->GetDer(operand);//此处是否有bug？
     }
     DerResult = new Tensor(der);
     return *DerResult;

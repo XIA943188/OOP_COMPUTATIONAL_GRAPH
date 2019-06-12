@@ -100,7 +100,7 @@ public:
 
 	void RMSprop(string, string, vector<pair<string, _T> >, _T &, const double &, const double & = 1e-4);
 
-	void Adam(string, string, vector<pair<string, _T> >, const int &, const double &, const double & = 1e-4, const double & = 0.9, const double & = 0.999);
+	void Adam(string, string, vector<pair<string, _T> >, const int &, const double & = 1e-4, const double & = 0.9, const double & = 0.999);
 };
 //一个安全性考虑，在类外除了节点建立时，不允许通过任何方式获取建立的节点的地址，防止其被提前删除
 
@@ -307,7 +307,7 @@ void ComGraph<Tensor>::RMSprop(string LossName, string VarName, vector<pair<stri
 }
 
 template<>
-void ComGraph<Tensor>::Adam(string LossName, string VarName, vector<pair<string, Tensor> > PHList, const int &iter_num, const double &decay, const double &lr, const double &beta_1, const double &beta_2) {
+void ComGraph<Tensor>::Adam(string LossName, string VarName, vector<pair<string, Tensor> > PHList, const int &iter_num, const double &lr, const double &beta_1, const double &beta_2) {
 	for (int i = 0; i < PHList.size(); ++i) SetPHNodeVal(GetNode(PHList[i].first), PHList[i].second);
 	int iter = 0;
 	Node<Tensor> *target = GetNode(LossName), *var = GetNode(VarName);

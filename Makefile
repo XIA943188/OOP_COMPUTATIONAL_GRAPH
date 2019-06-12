@@ -19,5 +19,8 @@ main4: main4.o
 main4.o: main4.cpp
 	g++ -c main4.cpp -std=c++14
 
+main5: tensor_demo.cpp
+	g++ -o main5 tensor_demo.cpp -std=c++14
+
 clean:
-	rm main1 main2 main3 main4 *.o
+	rm main1 main2 main3 main4 main5 *.o

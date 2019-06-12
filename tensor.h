@@ -135,6 +135,12 @@ public:
         out << "\n";
 	return out;
     }
+
+    void shape_display() {
+        std::cout << "(";
+        for (int i = 0; i < dim() - 1; i++) std::cout << shape_size(i) << ", ";
+        std::cout << shape_size(dim() - 1) << ")" << std::endl;
+    }
 };
 
 const std::string Tensor::ErrMsg = "ERROR: shape of tensor incompatible";
@@ -259,7 +265,7 @@ Tensor Tensor::softmax() const {
     double sum = 0.0;
     for (auto it : _elem) sum += exp(it);
     for (int rank = 0; rank < new_size; rank++)
-        new_elem[rank] = _elem[rank] / sum;
+        new_elem[rank] = exp(_elem[rank]) / sum;
     return Tensor(shape(), new_elem);
 }
 
@@ -318,8 +324,7 @@ Tensor Tensor::operator+(const Tensor &t) { //按正常的矩阵加法，也可�
 }
 
 Tensor Tensor::operator-() const {
-    for (auto it : _elem) it = -it;
-    return *this;
+    return broadcast_mul(Tensor(shape(), -1.));
 }
 
 Tensor Tensor::operator-(const Tensor &t) {
@@ -344,7 +349,8 @@ Tensor Tensor::operator*(const Tensor &t) {
 }
 
 Tensor Tensor::operator*(const double &d) {
-    Shape new_shape(dim()); for (auto it = new_shape.begin(); it != new_shape.end(); it++) *it = 1;
+    Shape new_shape(dim());
+    for (auto it = new_shape.begin(); it != new_shape.end(); it++) *it = 1;
     return broadcast_mul(Tensor(new_shape, d));
 }
 
