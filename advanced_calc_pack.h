@@ -11,5 +11,7 @@
 #include "assertcnode.h"
 #include "bindcnode.h"
 #include "assigncnode.h"
+#include "crossentropyloss.h"
+#include "mseloss.h"
 
 #endif

@@ -58,7 +58,7 @@ public:
     Tensor(const Shape &shape_, Elem &&elem_): _dim(shape_.size()), _shape(shape_) { _elem = std::move(elem_); }
     Tensor(const Shape &shape_, const double &val_):  _dim(shape_.size()), _shape(shape_) { //默认所有元素均为d，形状为shape（只在标量乘法用到）
         _elem = Elem(size());
-        for (auto it : _elem) it = val_;
+        for (auto it = _elem.begin(); it != _elem.end(); it++) *it = val_;
     }
     Tensor(const Elem &elem_): _dim(1), _elem(elem_) { //默认构造一个1*n的Tensor
         _shape = Shape(1); _shape[0] = elem_.size();
@@ -71,7 +71,7 @@ public:
         int new_size = t.size();
         Elem new_elem(new_size); 
         for (int i = 0; i < new_size; i++) new_elem[i] = t.elem(i);
-        _elem = new_elem; _shape = t.shape();
+        _elem = new_elem; _shape = t.shape(); _dim = t.dim();
     }
 
     int size() const { return shape2size(_shape); } //返回元素个数
@@ -99,6 +99,8 @@ public:
     Tensor der_relu() const;
     Tensor softmax() const;
     Tensor sqrt() const;
+    Tensor reduce_sum(const int &op_dim) const;
+    Tensor reduce_mul(const int &op_dim) const;
 
     double norm() const;
     int argmax() const; //返回元素最大的rank
@@ -269,6 +271,38 @@ Tensor Tensor::sqrt() const {
     return Tensor(shape(), new_elem);
 }
 
+Tensor Tensor::reduce_sum(const int &op_dim) const {
+    auto new_shape = _shape; new_shape[op_dim] = 1;
+    auto old_size = size(), new_size = shape2size(new_shape);
+    auto sum = Tensor(new_shape, 0.0);
+    for (int rank = 0; rank < old_size; rank++) {
+        auto shape_rank = rank2shape_rank(rank, new_shape);
+        sum.elem(shape_rank) += elem(rank);
+    }
+    new_shape.erase(new_shape.begin() + op_dim);
+    sum.reshape(new_shape);
+    return sum;
+}
+
+Tensor Tensor::reduce_mul(const int &op_dim) const {
+    auto new_shape = _shape; new_shape[op_dim] = 1;
+    auto old_size = size(), new_size = shape2size(new_shape);
+    auto prod = Tensor(new_shape, 1.0);
+    for (int rank = 0; rank < old_size; rank++) {
+        auto shape_rank = rank2shape_rank(rank, new_shape);
+        prod.elem(shape_rank) *= elem(rank);
+    }
+    new_shape.erase(new_shape.begin() + op_dim);
+    prod.reshape(new_shape);
+    return prod;
+}
+
+double Tensor::norm() const {
+    double res = 0.0;
+    for (auto it : _elem) res += it * it;
+    return std::sqrt(res);
+}
+
 int Tensor::argmax() const {
     double max_elem = elem(0); int max_rank = 0;
     int total_size = size();
@@ -277,12 +311,6 @@ int Tensor::argmax() const {
             max_elem = elem(i); max_rank = i;
         }
     return max_rank;
-}
-
-double Tensor::norm() const {
-    double res = 0.0;
-    for (auto it : _elem) res += it * it;
-    return std::sqrt(res);
 }
 
 Tensor Tensor::operator+(const Tensor &t) { //按正常的矩阵加法，也可以调用broadcast_sum

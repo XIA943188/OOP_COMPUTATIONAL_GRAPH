@@ -26,15 +26,17 @@ template<>
 Tensor MSELoss<Tensor>::Calc(){
     Tensor ans = Operands[0]->GetVal();
     Tensor target = Operands[1]->GetVal();
-    if(ans.shape_size(0) != target.shape_size(0)) //目前只判断第一维度是否相同，默认其余分量是1
+    if(ans.shape_size(0) != target.shape_size(0)) {//目前只判断第一维度是否相同，默认其余分量是1
         throw DimErrMsg;
+    }
     Tensor output(Shape({1}), 0.0f);
     for(int i = 0; i < ans.shape_size(0); i++){
         double a = ans.elem(i), b = target.elem(i);
         output.elem(i) += (a-b) * (a-b);
     }
     output.elem(0) /= ans.shape_size(0);
-    return output;
+    Result = new Tensor(output);
+    return *Result;
 }
 
 template<>

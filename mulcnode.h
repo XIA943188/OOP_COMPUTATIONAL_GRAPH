@@ -26,7 +26,7 @@ double MulCNode<double>::Calc()
 
 template<>
 Tensor MulCNode<Tensor>::Calc()
-{
+{	
 	Result = new Tensor(Operands[0]->GetVal() * Operands[1]->GetVal());
 	return *Result;
 }

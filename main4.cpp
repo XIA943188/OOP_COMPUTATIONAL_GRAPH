@@ -25,11 +25,10 @@ const int iter_num = 10;
 
 int main() {
 	ComGraph<Tensor> neural_network(ErrOut, PriOut); 
-    int n;
 	//神经网络的建立-------BEGIN-------
     neural_network.BuildPHNode("x");
-	neural_network.BuildVarNode("W", Tensor(Shape({5, 10}), 0));
-    neural_network.BuildVarNode("b", Tensor(Shape({5, 1}), 0));
+	neural_network.BuildVarNode("W", Tensor(Shape({5, 10}), 0.0));
+    neural_network.BuildVarNode("b", Tensor(Shape({5, 1}), 1.0));
     neural_network.BuildPHNode("y");
     neural_network.BuildCalcNode<MulCNode<Tensor>>("mul", 2, vector<string>({"W", "x"}));
     neural_network.BuildCalcNode<PluCNode<Tensor>>("plu", 2, vector<string>({"mul", "b"}));
@@ -43,6 +42,7 @@ int main() {
     auto label_y = Tensor(Shape({5, 1}), Elem({0, 1, 0, 0, 0}));
     vector<pair<string, Tensor>> PHList;
     PHList.push_back(make_pair("x", sample_x)); PHList.push_back(make_pair("y", label_y));
+
     for (int iter = 0; iter < iter_num; iter++) {
         bool failed = false; Tensor Res;
         AnsOut << "# iter: " << iter << endl;
@@ -53,10 +53,13 @@ int main() {
             ErrOut << ErrMsg << endl;
             failed = true;
         }
+        
         if (!failed) {
-            auto W = neural_network.Eval("W", PHList), b = neural_network.Eval("b", PHList);
-            AnsOut << "W:\n" << W << "b:\n" << b << "loss: " << Res << endl;
+            AnsOut << Res;
+//            auto W = neural_network.Eval("W", PHList), b = neural_network.Eval("b", PHList);
+//            AnsOut << "W:\n" << W << "b:\n" << b << "loss: " << Res << endl;
         }
+        /*
         try {
             neural_network.GradientDescend("loss", "W");
             neural_network.GradientDescend("loss", "b");
@@ -64,6 +67,7 @@ int main() {
         catch (string &ErrMsg) {
             ErrOut << ErrMsg << endl;
         }
+        */
     }
     //优化过程结束--------END------
     return 0;

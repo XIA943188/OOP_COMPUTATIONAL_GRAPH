@@ -20,7 +20,7 @@ const std::string CrossEntropyLoss::RankErrMsg = "The rank in target is out of r
 Tensor CrossEntropyLoss::Calc(){
     Tensor softmax = Operands[0]->GetVal().softmax();
     Tensor target = Operands[1]->GetVal();
-    if(softmax.shape().size() != 1 || target.shape().size != 1 || target.shape_size(0) != 1)
+    if(softmax.shape().size() != 1 || target.shape().size() != 1 || target.shape_size(0) != 1)
         throw DimErrMsg;
     Tensor output(Shape({1}), 0.0f);
     if(target.elem(0) < 0 || target.elem(0) >= softmax.shape_size(0))
@@ -36,7 +36,7 @@ Tensor CrossEntropyLoss::DerCalc(Node<Tensor> * operand){
     else{
         Tensor der = Operands[0]->GetVal().softmax();
         Tensor target = Operands[1]->GetVal();
-        if(der.shape().size() != 1 || target.shape().size != 1 || target.shape_size(0) != 1)
+        if(der.shape().size() != 1 || target.shape().size() != 1 || target.shape_size(0) != 1)
             throw DimErrMsg;
         if(target.elem(0) < 0 || target.elem(0) >= der.shape_size(0))
             throw RankErrMsg;
