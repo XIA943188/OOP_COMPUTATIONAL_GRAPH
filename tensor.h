@@ -276,8 +276,8 @@ Tensor Tensor::reduce_sum(const int &op_dim) const {
     auto old_size = size(), new_size = shape2size(new_shape);
     auto sum = Tensor(new_shape, 0.0);
     for (int rank = 0; rank < old_size; rank++) {
-        auto shape_rank = rank2shape_rank(rank, new_shape);
-        sum.elem(shape_rank) += elem(rank);
+        auto shape_rank = rank2shape_rank(rank, _shape);
+        sum.elem(shape_rank) += elem(rank); //这里实际上会做一次模的操作，参看shape_rank2rank
     }
     new_shape.erase(new_shape.begin() + op_dim);
     sum.reshape(new_shape);
@@ -289,8 +289,8 @@ Tensor Tensor::reduce_mul(const int &op_dim) const {
     auto old_size = size(), new_size = shape2size(new_shape);
     auto prod = Tensor(new_shape, 1.0);
     for (int rank = 0; rank < old_size; rank++) {
-        auto shape_rank = rank2shape_rank(rank, new_shape);
-        prod.elem(shape_rank) *= elem(rank);
+        auto shape_rank = rank2shape_rank(rank, _shape);
+        prod.elem(shape_rank) *= elem(rank); //这里实际上会做一次模的操作，参看shape_rank2rank
     }
     new_shape.erase(new_shape.begin() + op_dim);
     prod.reshape(new_shape);
