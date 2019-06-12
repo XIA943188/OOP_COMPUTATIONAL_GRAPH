@@ -45,7 +45,3 @@
 [4 5]
 [6 7]]
 ```
-
-## `Tensor`的各种改变形状的接口
-
-`reshape(), concat(), transpose()`如之前所描述，新增加的接口有：`broadcast_div(), reduce_sum(), reduce_mul()`。

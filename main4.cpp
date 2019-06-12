@@ -42,7 +42,6 @@ int main() {
     auto label_y = Tensor(Shape({5, 1}), Elem({0, 1, 0, 0, 0}));
     vector<pair<string, Tensor>> PHList;
     PHList.push_back(make_pair("x", sample_x)); PHList.push_back(make_pair("y", label_y));
-
     for (int iter = 0; iter < iter_num; iter++) {
         bool failed = false; Tensor Res;
         AnsOut << "# iter: " << iter << endl;
@@ -55,19 +54,18 @@ int main() {
         }
         
         if (!failed) {
-            AnsOut << Res;
-//            auto W = neural_network.Eval("W", PHList), b = neural_network.Eval("b", PHList);
-//            AnsOut << "W:\n" << W << "b:\n" << b << "loss: " << Res << endl;
+            auto W = neural_network.Eval("W", PHList), b = neural_network.Eval("b", PHList);
+            AnsOut << "W:\n" << W << "b:\n" << b << "loss: " << Res << endl;
         }
-        /*
+        
         try {
-            neural_network.GradientDescend("loss", "W");
-            neural_network.GradientDescend("loss", "b");
+            neural_network.GradientDescend("dW", "W", PHList);
+            neural_network.GradientDescend("db", "b", PHList);
         }
         catch (string &ErrMsg) {
             ErrOut << ErrMsg << endl;
         }
-        */
+        
     }
     //优化过程结束--------END------
     return 0;

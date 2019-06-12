@@ -344,7 +344,7 @@ Tensor Tensor::operator*(const Tensor &t) {
 }
 
 Tensor Tensor::operator*(const double &d) {
-    Shape new_shape(1); new_shape[0] = 1;
+    Shape new_shape(dim()); for (auto it = new_shape.begin(); it != new_shape.end(); it++) *it = 1;
     return broadcast_mul(Tensor(new_shape, d));
 }
 

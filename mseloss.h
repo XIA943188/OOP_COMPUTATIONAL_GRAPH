@@ -51,7 +51,7 @@ Tensor MSELoss<Tensor>::DerCalc(Node <Tensor> *operand){
             throw DimErrMsg;
         der = der - target;
         der = der * ( 2.0 / double(der.shape_size(0)) );
-        der = der * Operands[0]->GetDer(operand);//此处是否有bug？
+        der = der.transpose() * Operands[0]->GetDer(operand); //此处是否有bug？
     }
     DerResult = new Tensor(der);
     return *DerResult;

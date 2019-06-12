@@ -55,8 +55,13 @@ template<>
 Tensor VarNode<Tensor>::GetDer(Node <Tensor> *operand)
 {
 	if (!Result) throw ErrMsg;
-	double der = (operand == this) ? 1.0 : 0.0;
-	DerResult = new Tensor(Shape({1, 1}), der);
+	int row_num = GetVal().size(), col_num = operand->GetVal().size();
+	auto der = Tensor(Shape({row_num, col_num}), 0.0);
+	if (this == operand) {
+		for (int i = 0; i < row_num; i++)
+			der.elem(Shape({i, i})) = 1.0;
+	}
+	DerResult = new Tensor(der);
 	return *DerResult;
 }
 

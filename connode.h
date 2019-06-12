@@ -42,7 +42,8 @@ double ConNode<double>::GetDer(Node <double> *operand) //默认任何节点对�
 
 template<>
 Tensor ConNode<Tensor>::GetDer(Node <Tensor> *operand) {
-	return Tensor(Shape({1, 1}), 0.0);
+	int row_num = GetVal().size(), col_num = operand->GetVal().size();
+	return Tensor(Shape({row_num, col_num}), 0.0);
 }
 
 #endif //COMPUTATIONAL_GRAPH_CONNODE_H

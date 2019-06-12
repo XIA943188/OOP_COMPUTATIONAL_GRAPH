@@ -43,8 +43,8 @@ double NormCNode<double>::DerCalc(Node <double> *operand)
 template<>
 Tensor NormCNode<Tensor>::DerCalc(Node <Tensor> *operand)
 {
-    Tensor der = (this == operand) ? Tensor(1, 1, 1.0) 
-		: Operands[0]->GetVal().broadcast_mul(Operands[0]->GetDer(operand)) * 2;
+    Tensor der = (this == operand) ? Tensor(Shape({1, 1}), 1.0) 
+		: Operands[0]->GetVal().transpose() * Operands[0]->GetDer(operand) * 2;
 	DerResult = new Tensor(der);
     return *DerResult;
 }

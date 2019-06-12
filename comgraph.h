@@ -94,13 +94,13 @@ public:
 		clear();
 	}
 
-	void GradientDescend(string, string, const double & = 1e-4); //先这么写着，没想好怎么传进去根节点的DerCNode和参数节点
+	void GradientDescend(string, string, vector<pair<string, _T> >, const double & = 1e-4); //先这么写着，没想好怎么传进去根节点的DerCNode和参数节点
 
-	_T MomGradientDescend(string, string, const _T &, const double &, const double & = 1e-4);
+	void MomGradientDescend(string, string, vector<pair<string, _T> >, _T &, const double &, const double & = 1e-4);
 
-	void RMSprop(string, string, _T &, const double &, const double & = 1e-4);
+	void RMSprop(string, string, vector<pair<string, _T> >, _T &, const double &, const double & = 1e-4);
 
-	void Adam(string, string, const int &, const double &, const double & = 1e-4, const double & = 0.9, const double & = 0.999);
+	void Adam(string, string, vector<pair<string, _T> >, const int &, const double &, const double & = 1e-4, const double & = 0.9, const double & = 0.999);
 };
 //一个安全性考虑，在类外除了节点建立时，不允许通过任何方式获取建立的节点的地址，防止其被提前删除
 
@@ -276,42 +276,46 @@ void ComGraph<_T>::AddNode(string NodeName, Node<_T> *Point)
 	NodeAddress.push_back(Point);
 }
 
-template<typename _T>
-void ComGraph<_T>::GradientDescend(string LossName, string VarName, const double &lr) {
-	Node<_T> *target = GetNode(LossName), *var = GetNode(VarName);
-	_T der = dynamic_cast<DerCNode<_T> *>(target)->GetVal(); //求导
-	_T new_val = var->GetVal() - der * lr;
+template<>
+void ComGraph<Tensor>::GradientDescend(string LossName, string VarName, vector<pair<string, Tensor> > PHList, const double &lr) {
+	for (int i = 0; i < PHList.size(); ++i) SetPHNodeVal(GetNode(PHList[i].first), PHList[i].second);
+	Node<Tensor> *target = GetNode(LossName), *var = GetNode(VarName);
+	Tensor der = dynamic_cast<DerCNode<Tensor> *>(target)->GetVal().reshape(var->GetVal().shape()); //求导
+	Tensor new_val = var->GetVal() - der * lr;
 	SetVarVal(VarName, new_val);
-}
-
-template<typename _T>
-_T ComGraph<_T>::MomGradientDescend(string LossName, string VarName, const _T &last_vel, const double &coeff, const double &lr) {
-	Node<_T> *target = GetNode(LossName), *var = GetNode(VarName);
-	_T der = dynamic_cast<DerCNode<_T> *>(target)->GetVal(); //求导
-	_T vel = der * lr + last_vel * coeff;
-	_T new_val = var->GetVal() - vel;
-	SetVarVal(VarName, new_val);
-	return vel;
 }
 
 template<>
-void ComGraph<Tensor>::RMSprop(string LossName, string VarName, Tensor &grad_square, const double &decay, const double &lr) {
+void ComGraph<Tensor>::MomGradientDescend(string LossName, string VarName, vector<pair<string, Tensor> > PHList, Tensor &last_vel, const double &coeff, const double &lr) {
+	for (int i = 0; i < PHList.size(); ++i) SetPHNodeVal(GetNode(PHList[i].first), PHList[i].second);
 	Node<Tensor> *target = GetNode(LossName), *var = GetNode(VarName);
-	Tensor der = dynamic_cast<DerCNode<Tensor> *>(target)->GetVal(); //求导
+	Tensor der = dynamic_cast<DerCNode<Tensor> *>(target)->GetVal().reshape(var->GetVal().shape()); //求导
+	Tensor new_vel = der * lr + last_vel * coeff;
+	Tensor new_val = var->GetVal() - new_vel;
+	SetVarVal(VarName, new_val);
+	last_vel = new_vel;
+}
+
+template<>
+void ComGraph<Tensor>::RMSprop(string LossName, string VarName, vector<pair<string, Tensor> > PHList, Tensor &grad_square, const double &decay, const double &lr) {
+	for (int i = 0; i < PHList.size(); ++i) SetPHNodeVal(GetNode(PHList[i].first), PHList[i].second);
+	Node<Tensor> *target = GetNode(LossName), *var = GetNode(VarName);
+	Tensor der = dynamic_cast<DerCNode<Tensor> *>(target)->GetVal().reshape(var->GetVal().shape()); //求导
 	grad_square = grad_square * decay + (der.broadcast_mul(der)) * (1 - decay);
 	Tensor new_val = var->GetVal() - der.broadcast_div(grad_square.sqrt() + Tensor(grad_square.shape(), 1e-8)) * lr;
 	SetVarVal(VarName, new_val);
 }
 
 template<>
-void ComGraph<Tensor>::Adam(string LossName, string VarName, const int &iter_num, const double &decay, const double &lr, const double &beta_1, const double &beta_2) {
+void ComGraph<Tensor>::Adam(string LossName, string VarName, vector<pair<string, Tensor> > PHList, const int &iter_num, const double &decay, const double &lr, const double &beta_1, const double &beta_2) {
+	for (int i = 0; i < PHList.size(); ++i) SetPHNodeVal(GetNode(PHList[i].first), PHList[i].second);
 	int iter = 0;
 	Node<Tensor> *target = GetNode(LossName), *var = GetNode(VarName);
 	Tensor first_mom = Tensor(var->GetVal().shape(), 0.0), second_mom = Tensor(var->GetVal().shape(), 0.0);
 	double beta_1_pow = 1., beta_2_pow = 1.;
 	while (iter++ < iter_num) {
 		beta_1_pow *= beta_1; beta_2_pow *= beta_2;
-		Tensor der = dynamic_cast<DerCNode<Tensor> *>(target)->GetVal(); //求导
+		Tensor der = dynamic_cast<DerCNode<Tensor> *>(target)->GetVal().reshape(var->GetVal().shape()); //求导
 		first_mom = first_mom * beta_1 + der * (1 - beta_1);
 		second_mom = second_mom * beta_2 + der.broadcast_mul(der) * (1 - beta_2);
 		auto first_unbias = first_mom * (1. / (1. - beta_1_pow));
