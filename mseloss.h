@@ -2,23 +2,31 @@
 #define MSE_LOSS_FUNCTION
 #include "losscnode.h"
 
-class MSELoss : public LossCNode{
+template<typename _T>
+class MSELoss : public CalcNode<_T>{
 private:
     static const std::string DimErrMsg;
 
 protected:
-    Tensor Calc(); //重载Calc，在这里进行计算
-	Tensor DerCalc(Node <Tensor> *operand);
-
+    _T Calc(); //重载Calc，在这里进行计算
+	_T DerCalc(Node <Tensor> *operand);
+public:
+    using CalcNode<_T>::Result;
+    using CalcNode<_T>::DerResult;
+    using CalcNode<_T>::OperandNum;
+    using CalcNode<_T>::Operands;
+    using CalcNode<_T>::CalcNode;
     //输入矩阵维度为ans(dim), target(dim)，输出维度为1
 };
 
-const std::string MSELoss::DimErrMsg = "Dimension Mismatched.";
+template <typename _T>
+const std::string MSELoss<_T>::DimErrMsg = "Dimension Mismatched.";
 
-Tensor MSELoss::Calc(){
+template<>
+Tensor MSELoss<Tensor>::Calc(){
     Tensor ans = Operands[0]->GetVal();
     Tensor target = Operands[1]->GetVal();
-    if(ans.dim() != 1 || target.dim() != 1 || ans.shape_size(0) != target.shape_size(0))
+    if(ans.shape_size(0) != target.shape_size(0)) //目前只判断第一维度是否相同，默认其余分量是1
         throw DimErrMsg;
     Tensor output(Shape({1}), 0.0f);
     for(int i = 0; i < ans.shape_size(0); i++){
@@ -29,14 +37,15 @@ Tensor MSELoss::Calc(){
     return output;
 }
 
-Tensor MSELoss::DerCalc(Node <Tensor> *operand){
+template<>
+Tensor MSELoss<Tensor>::DerCalc(Node <Tensor> *operand){
     Tensor der;
     if(this == operand)
         der = Tensor(Shape({1,1}), 1.0);
     else{
         der = Operands[0]->GetVal();
         Tensor target = Operands[1]->GetVal();
-        if(der.dim() != 1 || target.dim() != 1 || der.shape_size(0) != target.shape_size(0))
+        if(der.shape_size(0) != target.shape_size(0)) //目前只判断第一维度是否相同，默认其余分量是1
             throw DimErrMsg;
         der = der - target;
         der = der * ( 2.0 / double(der.shape_size(0)) );

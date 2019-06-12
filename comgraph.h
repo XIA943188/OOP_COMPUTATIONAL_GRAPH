@@ -316,7 +316,7 @@ void ComGraph<Tensor>::Adam(string LossName, string VarName, const int &iter_num
 		second_mom = second_mom * beta_2 + der.broadcast_mul(der) * (1 - beta_2);
 		auto first_unbias = first_mom * (1. / (1. - beta_1_pow));
 		auto second_unbias = second_mom * (1. / (1. - beta_2_pow));
-		Tensor new_val = var->GetVal() - first_unbias.broadcast_div(second_unbias.sqrt() + Tensor(grad_square.shape(), 1e-8)) * lr;
+		Tensor new_val = var->GetVal() - first_unbias.broadcast_div(second_unbias.sqrt() + Tensor(second_unbias.shape(), 1e-8)) * lr;
 		SetVarVal(VarName, new_val);
 	}
 }

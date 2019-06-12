@@ -51,5 +51,14 @@ double VarNode<double>::GetDer(Node <double> *operand)
 	return *DerResult;
 }
 
+template<>
+Tensor VarNode<Tensor>::GetDer(Node <Tensor> *operand)
+{
+	if (!Result) throw ErrMsg;
+	double der = (operand == this) ? 1.0 : 0.0;
+	DerResult = new Tensor(Shape({1, 1}), der);
+	return *DerResult;
+}
+
 #endif //COMPUTATIONAL_GRAPH_VARNODE_H
 

@@ -4,6 +4,8 @@
 #include "calcnode.h"
 #include "varnode.h"
 
+using std::pair;
+
 //由于Assign延迟赋值机制的存在，每次eval后需要执行AssignWaitingList::Clear()操作来赋值
 
 template <typename _T>

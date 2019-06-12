@@ -34,10 +34,15 @@ _T ConNode<_T>::GetVal() //直接返回常值
 template<typename _T>
 void ConNode<_T>::Clear() {} //清除时什么都不做
 
-template<typename _T>
-_T ConNode<_T>::GetDer(Node <_T> *operand) //默认任何节点对常数求导都是0
+template<>
+double ConNode<double>::GetDer(Node <double> *operand) //默认任何节点对常数求导都是0
 {
 	return 0.0;
+}
+
+template<>
+Tensor ConNode<Tensor>::GetDer(Node <Tensor> *operand) {
+	return Tensor(Shape({1, 1}), 0.0);
 }
 
 #endif //COMPUTATIONAL_GRAPH_CONNODE_H
