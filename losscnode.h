@@ -7,8 +7,7 @@
 
 //仅支持Tensor类型的计算图实现损失函数
 class LossCNode : public CalcNode<Tensor>{
-public:
-    virtual Tensor LossCalc(const Tensor& ans, const Tensor& target) = 0;
+
 };
 
 #endif
