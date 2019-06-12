@@ -36,6 +36,8 @@ Tensor MSELoss::DerCalc(Node <Tensor> *operand){
     else{
         der = Operands[0]->GetVal();
         Tensor target = Operands[1]->GetVal();
+        if(der.dim() != 1 || target.dim() != 1 || der.shape_size(0) != target.shape_size(0))
+            throw DimErrMsg;
         der = der - target;
         der = der * ( 2.0 / double(der.shape_size(0)) );
         der = der * Operands[0]->GetDer(operand);//此处是否有bug？

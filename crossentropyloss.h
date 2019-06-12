@@ -34,14 +34,13 @@ Tensor CrossEntropyLoss::DerCalc(Node<Tensor> * operand){
     if(this == operand)
         der = Tensor(Shape({1,1}), 1.0);
     else{
-        Tensor softmax = Operands[0]->GetVal().softmax();
+        Tensor der = Operands[0]->GetVal().softmax();
         Tensor target = Operands[1]->GetVal();
-        if(softmax.shape().size() != 1 || target.shape().size != 1 || target.shape_size(0) != 1)
+        if(der.shape().size() != 1 || target.shape().size != 1 || target.shape_size(0) != 1)
             throw DimErrMsg;
-        if(target.elem(0) < 0 || target.elem(0) >= softmax.shape_size(0))
+        if(target.elem(0) < 0 || target.elem(0) >= der.shape_size(0))
             throw RankErrMsg;
-        der = Tensor(softmax);
-        der.elem(target)--;
+        der.elem(target.elem(0))--;
         der = der * Operands[0]->GetDer(operand);//此处是否有bug？
     }
     DerResult = new Tensor(der);
