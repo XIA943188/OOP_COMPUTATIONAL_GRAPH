@@ -1,5 +1,9 @@
 # Computational-Graph
 
+## 项目说明
+
+本项目是清华大学2019年面向对象程序设计基础的计算图大作业
+
 ## 运行环境
 
 Linux ， Windows 平台皆可，推荐 Linux
@@ -14,7 +18,16 @@ Linux ， Windows 平台皆可，推荐 Linux
 ```
 $ cmake .
 $ make
-$ ./main
+```
+
+我们建议在 `build` 路径下进行编译以隔离编译过程中生成的文件
+
+在 `.` 目录下运行
+```
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make
 ```
 ### Windows 环境
 
