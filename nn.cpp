@@ -96,16 +96,22 @@ int main() {
             */
                 
                 
-            //带有动量的梯度下降 (Momentum Gradient Descend)，需要使用106-107行
+            //带有动量的梯度下降 (Momentum Gradient Descend)，需要使用69行
             neural_network.MomGradientDescend("dW", "W", PHList, W_vel, 0.8);
             neural_network.MomGradientDescend("db", "b", PHList, b_vel, 0.8);
                 
                 
             /*
-            //RMSprop（参考keras)，需要使用109-110行
+            //RMSprop（参考keras)，需要使用70行
             neural_network.RMSprop("dW", "W", PHList, init_W_sqr, 0.8);
             neural_network.RMSprop("db", "b", PHList, init_b_sqr, 0.8);
             */
+
+           /*
+           //Adam（参考keras)
+           neural_network.Adam("dW", "W", PHList, 10);
+           neural_network.Adam("db", "b", PHList, 10);
+           */
         }
         catch (string &ErrMsg) {
             ErrOut << ErrMsg << endl;
