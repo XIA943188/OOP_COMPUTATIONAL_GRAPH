@@ -25,15 +25,17 @@ const std::string BindCNode<_T>::DerErrMsg = "ERROR: Cannot derivate with BIND";
 template<typename _T>
 _T BindCNode<_T>::Calc()
 {
-    Result = new _T(Operands[0]->GetVal());
     Operands[1]->GetVal();
+    Result = new _T(Operands[0]->GetVal());
     return *Result;
 }
 
 template<typename _T>
 _T BindCNode<_T>::DerCalc(Node<_T>* operand)
 {
-    throw DerErrMsg;
+    DerResult = new _T(Operands[0]->GetDer(operand));
+//    Operands[1]->GetVal();
+    return *DerResult;
 }
 
 #endif

@@ -33,7 +33,7 @@ template <typename _T>
 _T AssertCNode<_T>::Calc()
 {
     Result = new _T(0);
-    if(Operands[0]->GetVal() <= 0)
+    if(Operands[0]->GetVal() <= 0.)
         throw ErrMsg;
     return *Result;
 }
