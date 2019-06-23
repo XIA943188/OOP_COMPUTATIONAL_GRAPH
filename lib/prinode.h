@@ -57,7 +57,8 @@ void PriNode<_T>::Clear()
 template<typename _T>
 _T PriNode<_T>::GetDer(Node <_T> *operand)
 {
-	throw ErrMsg;
+	DerResult = new _T(WatchNode->GetDer(operand));
+	return *DerResult;
 }
 
 #endif //COMPUTATIONAL_GRAPH_PRINODE_H

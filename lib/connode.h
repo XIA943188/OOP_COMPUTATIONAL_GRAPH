@@ -35,15 +35,23 @@ template<typename _T>
 void ConNode<_T>::Clear() {} //清除时什么都不做
 
 template<>
-double ConNode<double>::GetDer(Node <double> *operand) //默认任何节点对常数求导都是0
+double ConNode<double>::GetDer(Node <double> *operand)
 {
-	return 0.0;
+	double der = (operand == this) ? 1.0 : 0.0;
+	DerResult = new double(der);
+	return *DerResult;
 }
 
 template<>
-Tensor ConNode<Tensor>::GetDer(Node <Tensor> *operand) {
+Tensor ConNode<Tensor>::GetDer(Node <Tensor> *operand)
+{
 	int row_num = GetVal().size(), col_num = operand->GetVal().size();
-	return Tensor(Shape({row_num, col_num}), 0.0);
+	auto der = Tensor(Shape({row_num, col_num}), 0.0);
+	if (this == operand)
+		for (int i = 0; i < row_num; i++)
+			der.elem(Shape({i, i})) = 1.0;
+	DerResult = new Tensor(der);
+	return *DerResult;
 }
 
 #endif //COMPUTATIONAL_GRAPH_CONNODE_H

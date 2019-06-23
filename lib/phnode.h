@@ -42,7 +42,6 @@ _T PHNode<_T>::SetVal(_T _Val) //在Eval的时候用来预先赋值
 template<>
 double PHNode<double>::GetDer(Node <double> *operand)
 {
-	if (!Result) throw ErrMsg;
 	double der = (operand == this) ? 1.0 : 0.0;
 	DerResult = new double(der);
 	return *DerResult;
@@ -51,7 +50,6 @@ double PHNode<double>::GetDer(Node <double> *operand)
 template<>
 Tensor PHNode<Tensor>::GetDer(Node <Tensor> *operand)
 {
-	if (!Result) throw ErrMsg;
 	int row_num = GetVal().size(), col_num = operand->GetVal().size();
 	auto der = Tensor(Shape({row_num, col_num}), 0.0);
 	if (this == operand)
